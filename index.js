@@ -99,16 +99,103 @@
 //   console.log("app is listening on port " + port);
 // });
 
+// my working sample
+
+// const express = require("express");
+// const mongoose = require("mongoose");
+
+// const app = express();
+
+// const User = require("./models/user");
+
+// const port = process.env.PORT || 5000;
+
+// app.use(express.json());
+
+//connect to mongoose
+
+// mongoose.connect(
+//   "mongodb+srv://botanicalCoder:mongopassword@cluster0.gltnq.mongodb.net/boilerplateyoutube?retryWrites=true&w=majority",
+//   {
+//     useNewUrlParser: true,
+//     useFindAndModify: true,
+//     useCreateIndex: true,
+//     useUnifiedTopology: true,
+//   },
+//   (err, something) => {
+//     if (err) {
+//       console.log(err);
+//     }
+//   }
+// );
+
+// mongoose.connection.on("open", (err) => {
+//   if (err) {
+//     console.log(err);
+//   } else {
+//     console.log("connected to database");
+//   }
+// });
+
+// app.get("/", (req, res) => {
+//   res.send("hello world");
+// });
+
+// app.post("/api/user/signup", (req, res) => {
+//   //console.log(req.body);
+//   const { email, password } = req.body;
+//   const user = new User({ email, password });
+//   user
+//     .save()
+//     .then(() => {
+//       return res.send(req.body);
+//     })
+//     .catch((err) => {
+//       console.log(err);
+//       return res.status(500).json({ " message ": "an error occured" });
+//     });
+// });
+
+// app.post("/api/user/login", (req, res) => {
+//   User.findOne({ email: req.body.email }).then((user) => {
+//     user.comparePassword(req.body.password, function(err, isMatch){
+//       if (err) {
+//         return res.json({
+//           message: "incorrect username or password",
+//         });
+//       } else {
+//         user.generateToken(function(err, user){
+//           if (err) {
+//             return res.json({
+//               message: "incorrect username or password",
+//             });
+//           }
+//           return res
+//             .cookie("cookie", user.token)
+//             .json({ message: "sign in successful" });
+//         });
+//       }
+//     });
+//   });
+// });
+
+// app.listen(port, () => {
+//   console.log("app listening on port " + port);
+// });
+
+//tutorial sample
+
+// import express and mongoose
 const express = require("express");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
 
+//importing our auth route as auth
+const auth = require("./routes/auth");
+const validateUser = require("./middleware/validateUser");
+// creates an instance of the express app and save in the app constant
 const app = express();
-
-const User = require("../server/models/user");
-
-const port = process.env.PORT || 5000;
-
-app.use(express.json());
 
 //connect to mongoose
 
@@ -127,6 +214,7 @@ mongoose.connect(
   }
 );
 
+//listen for the connection open event
 mongoose.connection.on("open", (err) => {
   if (err) {
     console.log(err);
@@ -135,48 +223,27 @@ mongoose.connection.on("open", (err) => {
   }
 });
 
+// sets the port to the environment variable PORT but if the variable is not set we use 5000
+const port = process.env.PORT || 5000;
+
+// middleware that parses json
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors());
+
+app.use("/api/user", auth);
+
+// a route to / that returns an oject
 app.get("/", (req, res) => {
-  res.send("hello world");
+  return res.send({ message: "welcome to the auth app " });
 });
 
-app.post("/api/user/signup", (req, res) => {
-  //console.log(req.body);
-  const { email, password } = req.body;
-  const user = new User({ email, password });
-  user
-    .save()
-    .then(() => {
-      return res.send(req.body);
-    })
-    .catch((err) => {
-      console.log(err);
-      return res.status(500).json({ " message ": "an error occured" });
-    });
+app.get("/userdetails", validateUser, (req, res) => {
+  let { user } = req;
+  return res.send(user);
 });
 
-app.post("/api/user/login", (req, res) => {
-  User.findOne({ email: req.body.email }).then((user) => {
-    user.comparePassword(req.body.password, function(err, isMatch){
-      if (err) {
-        return res.json({
-          message: "incorrect username or password",
-        });
-      } else {
-        user.generateToken(function(err, user){
-          if (err) {
-            return res.json({
-              message: "incorrect username or password",
-            });
-          }
-          return res
-            .cookie("cookie", user.token)
-            .json({ message: "sign in successful" });
-        });
-      }
-    });
-  });
-});
-
+// listen for requests made to our server on the specified port
 app.listen(port, () => {
-  console.log("app listening on port " + port);
+  console.log(`app listening on port ${port}`);
 });
